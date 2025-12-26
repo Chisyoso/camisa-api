@@ -1,0 +1,15 @@
+{
+  "name": "camisa-api",
+  "version": "1.0.0",
+  "description": "API para generar camisetas con nombre y número",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "TuNombre",
+  "license": "MIT",
+  "dependencies": {
+    "canvas": "^2.11.2",
+    "express": "^4.18.2"
+  }
+}
