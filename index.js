@@ -161,8 +161,6 @@ async function drawPlayer(ctx, username, x, y) {
     const size = 360;
     ctx.drawImage(avatar, x - size / 2, y - size / 2, size, size);
   }
-
-  drawCenteredText(ctx, username, x, 540, 320, 40, "white", "rgba(0,0,0,0.9)", 8);
 }
 
 async function drawVS(ctx) {
@@ -171,7 +169,7 @@ async function drawVS(ctx) {
     ctx.save();
     ctx.shadowColor = "rgba(255,0,0,0.45)";
     ctx.shadowBlur = 28;
-    ctx.drawImage(vs, WIDTH / 2 - 110, HEIGHT / 2 - 110, 220, 220);
+    ctx.drawImage(vs, WIDTH / 2 - 110, HEIGHT / 2 - 110, 220, 220); // VS posición
     ctx.restore();
   }
 }
@@ -198,18 +196,15 @@ app.get("/versus", async (req, res) => {
     ctx.fillStyle = topGlow;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-    drawCenteredText(ctx, score, WIDTH / 2, 86, 320, 104, "white", "rgba(0,0,0,0.95)", 10);
+    drawCenteredText(ctx, leftName, 250, 86, 360, 42, paletteFromSeed(leftName).text, "rgba(0,0,0,0.95)", 9); // nombre equipo izquierdo (arriba)
+    drawCenteredText(ctx, rightName, WIDTH - 250, 86, 360, 42, paletteFromSeed(rightName).text, "rgba(0,0,0,0.95)", 9); // nombre equipo derecho (arriba)
 
-    await drawPlayer(ctx, leftNick, 250, 320);
-    await drawPlayer(ctx, rightNick, WIDTH - 250, 320);
+    drawCenteredText(ctx, score, WIDTH / 2, 600, 320, 104, "white", "rgba(0,0,0,0.95)", 10); // marcador (abajo)
+
+    await drawPlayer(ctx, leftNick, 250, 320); // jugador izquierdo
+    await drawPlayer(ctx, rightNick, WIDTH - 250, 320); // jugador derecho
 
     await drawVS(ctx);
-
-    const leftPalette = paletteFromSeed(leftName);
-    const rightPalette = paletteFromSeed(rightName);
-
-    drawCenteredText(ctx, leftName, 250, 610, 360, 42, leftPalette.text, "rgba(0,0,0,0.95)", 9);
-    drawCenteredText(ctx, rightName, WIDTH - 250, 610, 360, 42, rightPalette.text, "rgba(0,0,0,0.95)", 9);
 
     ctx.fillStyle = "rgba(255,255,255,0.05)";
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
