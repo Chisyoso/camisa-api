@@ -10,9 +10,6 @@ const HEIGHT = 648;
 
 const VS_URL = "https://i.imgur.com/DOys6I4.png";
 
-// =========================
-// ROBLOX API
-// =========================
 async function getUserId(username) {
   try {
     const res = await fetch("https://users.roblox.com/v1/usernames/users", {
@@ -23,7 +20,6 @@ async function getUserId(username) {
         excludeBannedUsers: false,
       }),
     });
-
     const data = await res.json();
     return data.data?.[0]?.id || null;
   } catch {
@@ -34,7 +30,6 @@ async function getUserId(username) {
 async function getAvatarFromUsername(username) {
   const id = await getUserId(username);
   if (!id) return null;
-
   try {
     const res = await fetch(
       `https://thumbnails.roblox.com/v1/users/avatar?userIds=${id}&size=720x720&format=Png&isCircular=false`
@@ -46,16 +41,13 @@ async function getAvatarFromUsername(username) {
   }
 }
 
-// =========================
-// UTIL
-// =========================
 function safe(v) {
   return decodeURIComponent(v || "");
 }
 
 async function loadImageSafe(url) {
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
     if (!res.ok) return null;
     const buffer = await res.buffer();
     return await loadImage(buffer);
@@ -118,10 +110,16 @@ function drawCenteredText(ctx, text, x, y, maxWidth, startSize, fillStyle, strok
   ctx.fillText(text, x, y);
 }
 
-// =========================
-// BACKGROUND DECORADO
-// =========================
-function drawBackground(ctx) {
+async function drawBackground(ctx, bgUrl) {
+  if (bgUrl && bgUrl !== "0" && bgUrl !== "?") {
+    const img = await loadImageSafe(bgUrl);
+    if (img) {
+      ctx.drawImage(img, 0, 0, WIDTH, HEIGHT);
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      return;
+    }
+  }
   const bg = ctx.createLinearGradient(0, 0, 0, HEIGHT);
   bg.addColorStop(0, "#050505");
   bg.addColorStop(0.55, "#0b0b0b");
@@ -136,9 +134,6 @@ function drawBackground(ctx) {
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 }
 
-// =========================
-// PLAYER DECORADO
-// =========================
 async function drawPlayer(ctx, username, x, y) {
   const avatarURL = await getAvatarFromUsername(username);
   const avatar = avatarURL ? await loadImageSafe(avatarURL) : null;
@@ -167,22 +162,9 @@ async function drawPlayer(ctx, username, x, y) {
     ctx.drawImage(avatar, x - size / 2, y - size / 2, size, size);
   }
 
-  drawCenteredText(
-    ctx,
-    username,
-    x,
-    540,
-    320,
-    40,
-    "white",
-    "rgba(0,0,0,0.9)",
-    8
-  );
+  drawCenteredText(ctx, username, x, 540, 320, 40, "white", "rgba(0,0,0,0.9)", 8);
 }
 
-// =========================
-// VS
-// =========================
 async function drawVS(ctx) {
   const vs = await loadImageSafe(VS_URL);
   if (vs) {
@@ -194,9 +176,6 @@ async function drawVS(ctx) {
   }
 }
 
-// =========================
-// API
-// =========================
 app.get("/versus", async (req, res) => {
   try {
     const leftNick = safe(req.query.leftNick) || "Player1";
@@ -206,11 +185,12 @@ app.get("/versus", async (req, res) => {
     const rightName = safe(req.query.rightName) || rightNick;
 
     const score = safe(req.query.score) || "0-0";
+    const bgUrl = safe(req.query.font);
 
     const canvas = createCanvas(WIDTH, HEIGHT);
     const ctx = canvas.getContext("2d");
 
-    drawBackground(ctx);
+    await drawBackground(ctx, bgUrl);
 
     const topGlow = ctx.createRadialGradient(WIDTH / 2, 80, 20, WIDTH / 2, 80, 260);
     topGlow.addColorStop(0, "rgba(255,255,255,0.18)");
@@ -218,17 +198,7 @@ app.get("/versus", async (req, res) => {
     ctx.fillStyle = topGlow;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-    drawCenteredText(
-      ctx,
-      score,
-      WIDTH / 2,
-      86,
-      320,
-      104,
-      "white",
-      "rgba(0,0,0,0.95)",
-      10
-    );
+    drawCenteredText(ctx, score, WIDTH / 2, 86, 320, 104, "white", "rgba(0,0,0,0.95)", 10);
 
     await drawPlayer(ctx, leftNick, 250, 320);
     await drawPlayer(ctx, rightNick, WIDTH - 250, 320);
@@ -238,29 +208,8 @@ app.get("/versus", async (req, res) => {
     const leftPalette = paletteFromSeed(leftName);
     const rightPalette = paletteFromSeed(rightName);
 
-    drawCenteredText(
-      ctx,
-      leftName,
-      250,
-      610,
-      360,
-      42,
-      leftPalette.text,
-      "rgba(0,0,0,0.95)",
-      9
-    );
-
-    drawCenteredText(
-      ctx,
-      rightName,
-      WIDTH - 250,
-      610,
-      360,
-      42,
-      rightPalette.text,
-      "rgba(0,0,0,0.95)",
-      9
-    );
+    drawCenteredText(ctx, leftName, 250, 610, 360, 42, leftPalette.text, "rgba(0,0,0,0.95)", 9);
+    drawCenteredText(ctx, rightName, WIDTH - 250, 610, 360, 42, rightPalette.text, "rgba(0,0,0,0.95)", 9);
 
     ctx.fillStyle = "rgba(255,255,255,0.05)";
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
