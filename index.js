@@ -77,6 +77,18 @@ function paletteFromSeed(seed) {
   };
 }
 
+function getCustomColors(c1, c2, fallbackSeed) {
+  if (c1 && c2) {
+    return {
+      fill: c1,
+      stroke: c2,
+      text: c2,
+      glow: c1,
+    };
+  }
+  return paletteFromSeed(fallbackSeed);
+}
+
 function roundedRect(ctx, x, y, w, h, r) {
   const radius = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
@@ -134,10 +146,10 @@ async function drawBackground(ctx, bgUrl) {
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 }
 
-async function drawPlayer(ctx, username, x, y) {
+async function drawPlayer(ctx, username, x, y, color1, color2) {
   const avatarURL = await getAvatarFromUsername(username);
   const avatar = avatarURL ? await loadImageSafe(avatarURL) : null;
-  const palette = paletteFromSeed(username);
+  const palette = getCustomColors(color1, color2, username);
 
   const boxW = 360;
   const boxH = 440;
@@ -161,6 +173,14 @@ async function drawPlayer(ctx, username, x, y) {
     const size = 360;
     ctx.drawImage(avatar, x - size / 2, y - size / 2, size, size);
   }
+
+  const barY = y + 210;
+  const grad = ctx.createLinearGradient(x - 120, barY, x + 120, barY);
+  grad.addColorStop(0, palette.fill);
+  grad.addColorStop(1, palette.stroke);
+
+  ctx.fillStyle = grad;
+  ctx.fillRect(x - 120, barY, 240, 12);
 }
 
 async function drawVS(ctx) {
@@ -169,7 +189,7 @@ async function drawVS(ctx) {
     ctx.save();
     ctx.shadowColor = "rgba(255,0,0,0.45)";
     ctx.shadowBlur = 28;
-    ctx.drawImage(vs, WIDTH / 2 - 110, HEIGHT / 2 - 110, 220, 220); // VS posición
+    ctx.drawImage(vs, WIDTH / 2 - 110, HEIGHT / 2 - 110, 220, 220);
     ctx.restore();
   }
 }
@@ -185,6 +205,9 @@ app.get("/versus", async (req, res) => {
     const score = safe(req.query.score) || "0-0";
     const bgUrl = safe(req.query.font);
 
+    const color1 = safe(req.query.color1);
+    const color2 = safe(req.query.color2);
+
     const canvas = createCanvas(WIDTH, HEIGHT);
     const ctx = canvas.getContext("2d");
 
@@ -196,13 +219,13 @@ app.get("/versus", async (req, res) => {
     ctx.fillStyle = topGlow;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-    drawCenteredText(ctx, leftName, 250, 86, 360, 42, paletteFromSeed(leftName).text, "rgba(0,0,0,0.95)", 9); // nombre equipo izquierdo (arriba)
-    drawCenteredText(ctx, rightName, WIDTH - 250, 86, 360, 42, paletteFromSeed(rightName).text, "rgba(0,0,0,0.95)", 9); // nombre equipo derecho (arriba)
+    drawCenteredText(ctx, leftName, 250, 86, 360, 42, getCustomColors(color1, color2, leftName).text, "rgba(0,0,0,0.95)", 9);
+    drawCenteredText(ctx, rightName, WIDTH - 250, 86, 360, 42, getCustomColors(color1, color2, rightName).text, "rgba(0,0,0,0.95)", 9);
 
-    drawCenteredText(ctx, score, WIDTH / 2, 600, 320, 104, "white", "rgba(0,0,0,0.95)", 10); // marcador (abajo)
+    drawCenteredText(ctx, score, WIDTH / 2, 600, 320, 104, "white", "rgba(0,0,0,0.95)", 10);
 
-    await drawPlayer(ctx, leftNick, 250, 320); // jugador izquierdo
-    await drawPlayer(ctx, rightNick, WIDTH - 250, 320); // jugador derecho
+    await drawPlayer(ctx, leftNick, 250, 320, color1, color2);
+    await drawPlayer(ctx, rightNick, WIDTH - 250, 320, color1, color2);
 
     await drawVS(ctx);
 
